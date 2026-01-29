@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIRM-LOCK Attestation Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --accent-primary: #00d4aa;
+            --accent-secondary: #00a884;
+            --accent-danger: #ff4757;
+            --accent-warning: #ffa502;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --border-color: #2a2a3a;
+            --glow-primary: 0 0 20px rgba(0, 212, 170, 0.3);
+            --glow-danger: 0 0 20px rgba(255, 71, 87, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 170, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 170, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: var(--glow-primary);
+        }
+
+        .logo-text h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-text p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--bg-tertiary);
+            border-radius: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 4px 30px rgba(0, 212, 170, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        /* Device Status Card */
+        .device-status {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-badge.healthy {
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+        }
+
+        .status-badge.compromised {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--accent-danger);
+            border: 1px solid var(--accent-danger);
+            animation: danger-pulse 1s infinite;
+        }
+
+        .status-badge.quarantine {
+            background: rgba(255, 165, 2, 0.15);
+            color: var(--accent-warning);
+            border: 1px solid var(--accent-warning);
+        }
+
+        @keyframes danger-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+        }
+
+        .device-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .info-item {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-primary);
+        }
+
+        .btn-danger {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--accent-danger);
+            border: 1px solid var(--accent-danger);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 71, 87, 0.25);
+            box-shadow: var(--glow-danger);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Attestation Log */
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .log-table th {
+            text-align: left;
+            padding: 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .log-table td {
+            padding: 12px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .log-table tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .log-result {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .log-result.pass {
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--accent-primary);
+        }
+
+        .log-result.fail {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--accent-danger);
+        }
+
+        /* PCR Display */
+        .pcr-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .pcr-item {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .pcr-index {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+
+        .pcr-content {
+            flex: 1;
+        }
+
+        .pcr-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .pcr-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .pcr-status {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .pcr-status.match {
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--accent-primary);
+        }
+
+        .pcr-status.mismatch {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--accent-danger);
+            animation: danger-pulse 1s infinite;
+        }
+
+        /* Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .metric-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Terminal */
+        .terminal {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .terminal-line {
+            margin-bottom: 8px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .terminal-time {
+            color: var(--text-muted);
+        }
+
+        .terminal-info {
+            color: var(--accent-primary);
+        }
+
+        .terminal-success {
+            color: var(--accent-primary);
+        }
+
+        .terminal-error {
+            color: var(--accent-danger);
+        }
+
+        .terminal-warning {
+            color: var(--accent-warning);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🔒</div>
+                <div class="logo-text">
+                    <h1>FIRM-LOCK</h1>
+                    <p>Attestation Dashboard</p>
+                </div>
+            </div>
+            <div class="connection-status">
+                <div class="status-dot"></div>
+                <span id="connection-text">Device Connected</span>
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Device Status -->
+                <div class="card animate-in">
+                    <div class="card-header">
+                        <span class="card-title">Device Status</span>
+                        <span class="status-badge healthy" id="device-status">🟢 HEALTHY</span>
+                    </div>
+                    <div class="device-info">
+                        <div class="info-item">
+                            <div class="info-label">Device ID</div>
+                            <div class="info-value" id="device-id">FL-2847-AF</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Firmware Version</div>
+                            <div class="info-value" id="firmware-version">v2.1.0</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Last Attestation</div>
+                            <div class="info-value" id="last-attestation">14:32:01</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Uptime</div>
+                            <div class="info-value" id="uptime">47 days</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PCR Values -->
+                <div class="card animate-in" style="margin-top: 25px;">
+                    <div class="card-header">
+                        <span class="card-title">PCR Values (Platform Configuration Registers)</span>
+                    </div>
+                    <div class="pcr-list" id="pcr-list">
+                        <div class="pcr-item">
+                            <div class="pcr-index">0</div>
+                            <div class="pcr-content">
+                                <div class="pcr-label">Bootloader Measurement</div>
+                                <div class="pcr-value" id="pcr-0">0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b</div>
+                            </div>
+                            <div class="pcr-status match">✓</div>
+                        </div>
+                        <div class="pcr-item">
+                            <div class="pcr-index">1</div>
+                            <div class="pcr-content">
+                                <div class="pcr-label">Application Measurement</div>
+                                <div class="pcr-value" id="pcr-1">0xa1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2</div>
+                            </div>
+                            <div class="pcr-status match">✓</div>
+                        </div>
+                        <div class="pcr-item">
+                            <div class="pcr-index">2</div>
+                            <div class="pcr-content">
+                                <div class="pcr-label">Configuration Measurement</div>
+                                <div class="pcr-value" id="pcr-2">0xd4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5</div>
+                            </div>
+                            <div class="pcr-status match">✓</div>
+                        </div>
+                        <div class="pcr-item">
+                            <div class="pcr-index">3</div>
+                            <div class="pcr-content">
+                                <div class="pcr-label">Device Identity</div>
+                                <div class="pcr-value" id="pcr-3">0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b</div>
+                            </div>
+                            <div class="pcr-status match">✓</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminal Output -->
+                <div class="card animate-in" style="margin-top: 25px;">
+                    <div class="card-header">
+                        <span class="card-title">Live Terminal</span>
+                    </div>
+                    <div class="terminal" id="terminal">
+                        <div class="terminal-line">
+                            <span class="terminal-time">[14:31:58]</span>
+                            <span class="terminal-info">System initialized</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-time">[14:32:00]</span>
+                            <span class="terminal-info">Attestation challenge received</span>
+                        </div>
+                        <div class="terminal-line">
+                            <span class="terminal-time">[14:32:01]</span>
+                            <span class="terminal-success">✓ Attestation completed successfully</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Quick Actions -->
+                <div class="card animate-in">
+                    <div class="card-header">
+                        <span class="card-title">Quick Actions</span>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="btn btn-primary" id="btn-attest" onclick="triggerAttestation()">
+                            🔄 Trigger Attestation
+                        </button>
+                        <button class="btn btn-secondary" id="btn-history" onclick="viewHistory()">
+                            📊 View PCR History
+                        </button>
+                        <button class="btn btn-danger" id="btn-attack" onclick="simulateAttack()">
+                            ⚠️ Simulate Attack
+                        </button>
+                        <button class="btn btn-secondary" id="btn-recover" onclick="triggerRecovery()" disabled>
+                            🛡️ Trigger Recovery
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportLogs()">
+                            📥 Export Logs
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Attestation Log -->
+                <div class="card animate-in" style="margin-top: 25px;">
+                    <div class="card-header">
+                        <span class="card-title">Attestation Log</span>
+                    </div>
+                    <div class="log-container">
+                        <table class="log-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>Result</th>
+                                </tr>
+                            </thead>
+                            <tbody id="log-tbody">
+                                <tr>
+                                    <td>14:32:01</td>
+                                    <td>Scheduled</td>
+                                    <td><span class="log-result pass">✅ PASS</span></td>
+                                </tr>
+                                <tr>
+                                    <td>14:15:33</td>
+                                    <td>Manual</td>
+                                    <td><span class="log-result pass">✅ PASS</span></td>
+                                </tr>
+                                <tr>
+                                    <td>13:45:00</td>
+                                    <td>Scheduled</td>
+                                    <td><span class="log-result pass">✅ PASS</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card animate-in">
+                <div class="metric-value" id="metric-boot">580ms</div>
+                <div class="metric-label">Boot Time</div>
+            </div>
+            <div class="metric-card animate-in">
+                <div class="metric-value" id="metric-latency">1.2s</div>
+                <div class="metric-label">Attestation Latency</div>
+            </div>
+            <div class="metric-card animate-in">
+                <div class="metric-value" id="metric-power">9µA</div>
+                <div class="metric-label">Sleep Power</div>
+            </div>
+            <div class="metric-card animate-in">
+                <div class="metric-value" id="metric-detections">100%</div>
+                <div class="metric-label">Detection Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let deviceState = 'healthy'; // healthy, compromised, quarantine
+        let isAttesting = false;
+
+        // Golden PCR values (baseline)
+        const goldenPCRs = {
+            0: '0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b',
+            1: '0xa1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
+            2: '0xd4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5',
+            3: '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b'
+        };
+
+        // Compromised PCR values (after attack)
+        const compromisedPCRs = {
+            0: '0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b', // Bootloader unchanged
+            1: '0xe5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6', // Application compromised
+            2: '0xd4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5', // Config unchanged
+            3: '0x9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b'  // Identity unchanged
+        };
+
+        // Terminal logging
+        function log(message, type = 'info') {
+            const terminal = document.getElementById('terminal');
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            
+            const typeClass = {
+                'info': 'terminal-info',
+                'success': 'terminal-success',
+                'error': 'terminal-error',
+                'warning': 'terminal-warning'
+            }[type] || 'terminal-info';
+            
+            line.innerHTML = `
+                <span class="terminal-time">[${time}]</span>
+                <span class="${typeClass}">${message}</span>
+            `;
+            
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Add log entry to table
+        function addLogEntry(type, result) {
+            const tbody = document.getElementById('log-tbody');
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            const row = document.createElement('tr');
+            
+            const resultClass = result === 'PASS' ? 'pass' : 'fail';
+            const resultIcon = result === 'PASS' ? '✅' : '❌';
+            
+            row.innerHTML = `
+                <td>${time}</td>
+                <td>${type}</td>
+                <td><span class="log-result ${resultClass}">${resultIcon} ${result}</span></td>
+            `;
+            
+            tbody.insertBefore(row, tbody.firstChild);
+        }
+
+        // Update PCR display
+        function updatePCRDisplay(pcrs) {
+            for (let i = 0; i < 4; i++) {
+                const pcrValue = document.getElementById(`pcr-${i}`);
+                const pcrItem = pcrValue.closest('.pcr-item');
+                const pcrStatus = pcrItem.querySelector('.pcr-status');
+                
+                pcrValue.textContent = pcrs[i];
+                
+                // Check if matches golden
+                const matches = pcrs[i] === goldenPCRs[i];
+                pcrStatus.className = `pcr-status ${matches ? 'match' : 'mismatch'}`;
+                pcrStatus.textContent = matches ? '✓' : '✗';
+            }
+        }
+
+        // Update device status
+        function updateDeviceStatus(status) {
+            const statusBadge = document.getElementById('device-status');
+            const connectionText = document.getElementById('connection-text');
+            
+            deviceState = status;
+            
+            if (status === 'healthy') {
+                statusBadge.className = 'status-badge healthy';
+                statusBadge.textContent = '🟢 HEALTHY';
+                connectionText.textContent = 'Device Connected';
+                document.querySelector('.status-dot').style.background = 'var(--accent-primary)';
+            } else if (status === 'compromised') {
+                statusBadge.className = 'status-badge compromised';
+                statusBadge.textContent = '🔴 COMPROMISED';
+                connectionText.textContent = 'Device Quarantined';
+                document.querySelector('.status-dot').style.background = 'var(--accent-danger)';
+            } else if (status === 'quarantine') {
+                statusBadge.className = 'status-badge quarantine';
+                statusBadge.textContent = '⚠️ QUARANTINE';
+                connectionText.textContent = 'Device Restricted';
+                document.querySelector('.status-dot').style.background = 'var(--accent-warning)';
+            }
+        }
+
+        // Trigger attestation
+        async function triggerAttestation() {
+            if (isAttesting) return;
+            isAttesting = true;
+            
+            const btn = document.getElementById('btn-attest');
+            btn.disabled = true;
+            btn.textContent = '⏳ Attesting...';
+            
+            log('Attestation challenge received', 'info');
+            log('Collecting PCR values...', 'info');
+            
+            // Simulate delay
+            await new Promise(r => setTimeout(r, 800));
+            
+            log('Signing evidence with secure element...', 'info');
+            await new Promise(r => setTimeout(r, 400));
+            
+            // Determine result based on current state
+            const pcrs = deviceState === 'compromised' ? compromisedPCRs : goldenPCRs;
+            updatePCRDisplay(pcrs);
+            
+            const passed = deviceState !== 'compromised';
+            
+            if (passed) {
+                log('✓ Attestation completed successfully', 'success');
+                log('All PCRs match golden values', 'success');
+                addLogEntry('Manual', 'PASS');
+                updateDeviceStatus('healthy');
+            } else {
+                log('✗ PCR MISMATCH DETECTED!', 'error');
+                log('Expected: ' + goldenPCRs[1].substring(0, 20) + '...', 'error');
+                log('Received: ' + compromisedPCRs[1].substring(0, 20) + '...', 'error');
+                log('Device automatically quarantined', 'warning');
+                addLogEntry('Manual', 'FAIL');
+                updateDeviceStatus('compromised');
+                
+                // Enable recovery button
+                document.getElementById('btn-recover').disabled = false;
+            }
+            
+            // Update last attestation time
+            document.getElementById('last-attestation').textContent = 
+                new Date().toLocaleTimeString('en-US', { hour12: false });
+            
+            btn.disabled = false;
+            btn.textContent = '🔄 Trigger Attestation';
+            isAttesting = false;
+        }
+
+        // Simulate attack
+        async function simulateAttack() {
+            const btn = document.getElementById('btn-attack');
+            btn.disabled = true;
+            
+            log('⚠️ ATTACK SIMULATION STARTED', 'warning');
+            log('Attacker connecting SWD debugger...', 'warning');
+            await new Promise(r => setTimeout(r, 500));
+            
+            log('Reading original firmware...', 'warning');
+            await new Promise(r => setTimeout(r, 400));
+            
+            log('Injecting malicious payload...', 'warning');
+            await new Promise(r => setTimeout(r, 600));
+            
+            log('Flashing modified firmware...', 'warning');
+            await new Promise(r => setTimeout(r, 800));
+            
+            log('✗ Device compromised!', 'error');
+            log('PCR[1] changed: Application measurement differs', 'error');
+            
+            // Update state
+            updateDeviceStatus('compromised');
+            updatePCRDisplay(compromisedPCRs);
+            
+            // Enable recovery
+            document.getElementById('btn-recover').disabled = false;
+            
+            btn.disabled = false;
+        }
+
+        // Trigger recovery
+        async function triggerRecovery() {
+            const btn = document.getElementById('btn-recover');
+            btn.disabled = true;
+            
+            log('🛡️ Recovery initiated...', 'info');
+            log('Verifying golden image signature...', 'info');
+            await new Promise(r => setTimeout(r, 500));
+            
+            log('✓ Golden image verified', 'success');
+            log('Restoring factory firmware...', 'info');
+            await new Promise(r => setTimeout(r, 800));
+            
+            log('✓ Flash write complete', 'success');
+            log('Rebooting device...', 'info');
+            await new Promise(r => setTimeout(r, 600));
+            
+            log('✓ Device restored to trusted state', 'success');
+            
+            // Update state
+            updateDeviceStatus('healthy');
+            updatePCRDisplay(goldenPCRs);
+            addLogEntry('Recovery', 'PASS');
+            
+            btn.disabled = true;
+            btn.textContent = '🛡️ Trigger Recovery';
+        }
+
+        // View history
+        function viewHistory() {
+            log('Opening PCR history view...', 'info');
+            alert('PCR History View\n\nThis would show a graph of PCR changes over time.\nFor demo purposes, this is a placeholder.');
+        }
+
+        // Export logs
+        function exportLogs() {
+            log('Exporting attestation logs...', 'info');
+            
+            const logs = [
+                'FIRM-LOCK Attestation Log Export',
+                '================================',
+                `Export Time: ${new Date().toISOString()}`,
+                `Device ID: FL-2847-AF`,
+                '',
+                'Recent Attestations:',
+                '2025-01-27 14:32:01 - PASS - All PCRs match',
+                '2025-01-27 14:15:33 - PASS - All PCRs match',
+                '2025-01-27 13:45:00 - PASS - All PCRs match',
+                ''
+            ].join('\n');
+            
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'firmlock-logs.txt';
+            a.click();
+            
+            log('✓ Logs exported successfully', 'success');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Dashboard initialized', 'info');
+            log('Connected to device FL-2847-AF', 'success');
+            log('Secure channel established', 'success');
+        });
+    </script>
+</body>
+</html>
